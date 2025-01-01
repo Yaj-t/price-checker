@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+
+        input,
+        button {
+            padding: 8px;
+            margin: 5px 0;
+        }
+
+        #results {
+            margin-top: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Product Management</h1>
+
+    <!-- Search for a Product -->
+    <h2>Search Product</h2>
+    <form id="search-form">
+        <label for="barcode">Barcode:</label>
+        <input type="text" id="barcode" placeholder="Enter barcode" required>
+        <button type="submit">Search</button>
+    </form>
+    <div id="search-result"></div>
+
+    <!-- Add a New Product -->
+    <h2>Add Product</h2>
+    <form id="add-form">
+        <label for="add-barcode">Barcode:</label>
+        <input type="text" id="add-barcode" placeholder="Enter barcode" required>
+
+        <label for="add-name">Name:</label>
+        <input type="text" id="add-name" placeholder="Enter product name" required>
+
+        <label for="add-unit-cost">Unit Cost:</label>
+        <input type="number" id="add-unit-cost" placeholder="Enter unit cost" required>
+
+        <label for="add-retail-price">Retail Price:</label>
+        <input type="number" id="add-retail-price" placeholder="Enter retail price" required>
+
+        <label for="add-quantity">Quantity:</label>
+        <input type="text" id="add-quantity" placeholder="Enter quantity">
+
+        <button type="submit">Add Product</button>
+    </form>
+    <div id="add-result"></div>
+
+    <!-- Upload CSV File -->
+    <h2>Upload CSV</h2>
+    <form id="upload-form" enctype="multipart/form-data">
+        <label for="file">Select CSV File:</label>
+        <input type="file" id="file" accept=".csv" required>
+        <button type="submit">Upload</button>
+    </form>
+    <div id="upload-result"></div>
+
+    <script>
+        const baseUrl = 'http://localhost:3000'; // Update this to your API base URL if different
+
+        // Search Product
+        document.getElementById('search-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const barcode = document.getElementById('barcode').value;
+            const resultDiv = document.getElementById('search-result');
+            resultDiv.innerHTML = 'Searching...';
+
+            try {
+                const response = await fetch(`${baseUrl}/api/product/${barcode}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.product) {
+                        resultDiv.innerHTML = `
+            <table>
+              <tr><th>Field</th><th>Value</th></tr>
+              <tr><td>Barcode</td><td>${data.product.barcode}</td></tr>
+              <tr><td>Name</td><td>${data.product.name}</td></tr>
+              <tr><td>Unit Cost</td><td>${data.product.unit_cost}</td></tr>
+              <tr><td>Retail Price</td><td>${data.product.retail_price}</td></tr>
+              <tr><td>Quantity</td><td>${data.product.quantity}</td></tr>
+            </table>`;
+                    } else {
+                        resultDiv.innerHTML = 'Product not found.';
+                    }
+                } else {
+                    resultDiv.innerHTML = 'Error fetching product.';
+                }
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerHTML = 'An error occurred while searching.';
+            }
+        });
+
+        // Add Product
+        document.getElementById('add-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const product = {
+                barcode: document.getElementById('add-barcode').value,
+                name: document.getElementById('add-name').value,
+                unit_cost: parseFloat(document.getElementById('add-unit-cost').value),
+                retail_price: parseFloat(document.getElementById('add-retail-price').value),
+                quantity: document.getElementById('add-quantity').value,
+            };
+            const resultDiv = document.getElementById('add-result');
+            resultDiv.innerHTML = 'Adding...';
+
+            try {
+                const response = await fetch(`${baseUrl}/api/product`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(product),
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    resultDiv.innerHTML = 'Product added successfully.';
+                } else {
+                    resultDiv.innerHTML = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerHTML = 'An error occurred while adding the product.';
+            }
+        });
+
+        // Upload CSV
+        document.getElementById('upload-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const fileInput = document.getElementById('file');
+            const resultDiv = document.getElementById('upload-result');
+            resultDiv.innerHTML = 'Uploading...';
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                const response = await fetch(`${baseUrl}/upload`, {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    resultDiv.innerHTML = `File uploaded successfully. Updated ${data.count} products.`;
+                } else {
+                    resultDiv.innerHTML = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerHTML = 'An error occurred while uploading the file.';
+            }
+        });
+    </script>
+
+</body>
+
+</html>
